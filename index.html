@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title></title>
+  <script src="https://rawgit.com/Stuk/jszip/master/dist/jszip.js"></script>
+  <script src="https://rawgit.com/eligrey/FileSaver.js/master/FileSaver.js"></script>
+  <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <style>
+    #apidoc {
+      display: block;
+      height: 300px;
+      overflow: auto;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+<table>
+  <tr><th>message type</th><td><input type="text" id="root-class" value="response"/></td></tr>
+  <tr><th>Package</th><td> <input type="text" id="java-package" value="com.gilt"></td></tr>
+  <tr><th>JSON Array maps to</th><td><select id="array-mapping-type">
+    <option value="java.util.List">java.util.List</option>
+    <option value="java.util.ArrayList">java.util.ArrayList</option></select></td></tr>
+  <tr><th>JSON</th><td><textarea id="input-json" rows="10" cols="50">
+    {
+    "name": "foo",
+    "address": {
+       "streetlines": [ {"road":"shelbourne road", "number":23},{"road":"ballsbridge"}],
+       "city": "Dublin"
+    },
+    "age": 30
+    }
+</textarea></td></tr>
+  <tr><th><a href="http://apidoc.me">apidoc</a> models</th><td id="apidoc"></td></tr>
+</table>
+
+<button id="generate-java">Generate Code</button>
+<script src="js/json-generator.js"></script>
+</body>
+</html>
