@@ -7,6 +7,10 @@
   <script src="https://rawgit.com/eligrey/FileSaver.js/master/FileSaver.js"></script>
   <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
   <style>
+    body {
+      font-family: verdana;
+    }
+
     #apidoc {
       display: block;
       height: 300px;
@@ -16,26 +20,24 @@
   </style>
 </head>
 <body>
-<table>
-  <tr><th>message type</th><td><input type="text" id="root-class" value="response"/></td></tr>
-  <tr><th>Package</th><td> <input type="text" id="java-package" value="com.gilt"></td></tr>
-  <tr><th>JSON Array maps to</th><td><select id="array-mapping-type">
-    <option value="java.util.List">java.util.List</option>
-    <option value="java.util.ArrayList">java.util.ArrayList</option></select></td></tr>
-  <tr><th>JSON</th><td><textarea id="input-json" rows="10" cols="50">
-    {
-    "name": "foo",
-    "address": {
-       "streetlines": [ {"road":"shelbourne road", "number":23},{"road":"ballsbridge"}],
-       "city": "Dublin"
-    },
-    "age": 30
-    }
-</textarea></td></tr>
-  <tr><th><a href="http://apidoc.me">apidoc</a> models</th><td id="apidoc"></td></tr>
-</table>
 
-<button id="generate-java">Generate Code</button>
+  <dl>
+    <dt class="field-title"><label for="root-class">Message Type</label></dt>
+    <dd><input type="text" id="root-class" value="response"/></dd>
+  </dl>
+  <dt><label for="json-url">URL</label></dt><dd><input type="text" id="json-url" value="https://api.foursquare.com/v2/venues/explore?client_id=53VW4WPLFCAZ1IAYYRDAHMGQIZY2XH0EPA2Y4TSI0UKGSL3S&client_secret=I12UUUKAWHGMGHX3K11QDG3JVW11C0COVTEFQ4ZUS1NYXTMK&client_id=53VW4WPLFCAZ1IAYYRDAHMGQIZY2XH0EPA2Y4TSI0UKGSL3S&client_secret=I12UUUKAWHGMGHX3K11QDG3JVW11C0COVTEFQ4ZUS1NYXTMK&v=20150501&near=ballsbridge%2C%20ireland"> <button id="fetch-json">Fetch JSON</button></dd>
+  <fieldset>
+    <dt>Package</dt><dd> <input type="text" id="java-package" value="com.gilt"></dd>
+    <dt>JSON Array maps to</dt><dd><select id="array-mapping-type">
+      <option value="java.util.List">java.util.List</option>
+      <option value="java.util.ArrayList">java.util.ArrayList</option></select></dd>
+  </fieldset>
+  <dt>JSON</dt><dd><textarea id="input-json" rows="10" cols="50">
+    [ {"road":"shelbourne road", "number":23},{"road":"ballsbridge"}]
+</textarea></dd>
+  <dt><a href="http://apidoc.me">apidoc</a> models<br/><button id="saveapidoc">Save apidoc.json</button></dt><dd id="apidoc"></dd>
+  </table>
+  <button id="generate-java">Generate Code</button>
 <script src="js/json-generator.js"></script>
 </body>
 </html>

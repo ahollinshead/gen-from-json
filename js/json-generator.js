@@ -18,7 +18,7 @@ function singularize(name) {
     return name;
 }
 
-function parseType(obj, name, generatorFn) {
+function parseType(obj, name) {
   var member = { name: name };
   switch (typeof obj) {
     case "boolean":
@@ -28,6 +28,7 @@ function parseType(obj, name, generatorFn) {
     case "string":
       member.type = 'string';
       member.javaType = 'String';
+      member.example = obj;
       break;
     case "number":
       member.type = (obj % 1 === 0) ? 'int' : 'float';
@@ -36,16 +37,16 @@ function parseType(obj, name, generatorFn) {
     case 'object':
       if (obj instanceof Array) {
         member.type = 'array';
-        var containedType = parseType(obj[0], singularize(name), generatorFn);
+        var containedType = parseType(obj[0], singularize(name));
         member.arrayType = containedType.type;
         member.javaType = arrayType + '<' + containedType.javaType + ">";
       } else {
-        generatorFn(obj, name, generatorFn);
+        parseObject(obj, name);
         member.type = name;
         member.javaType = nameToJavaClass(name);
       }
       break;
-    default:
+    default: // when there is no type, e.g. an empty array
       member.type = 'String';
       member.javaType = 'String';
   }
@@ -55,31 +56,25 @@ function parseType(obj, name, generatorFn) {
 function parseObject(obj, name) {
   var members=[];
   for (var key in obj) {
-    members.push(parseType(obj[key], key, parseObject));
+    members.push(parseType(obj[key], key));
   }
   if (types.hasOwnProperty[name]) console.log('duplicate type ' + name);
   types[name] = {name: name, members: members};
 }
 
-function generateJava(obj, varName) {
-  var className = nameToJavaClass(varName),
-    code = "package " + packageName + ";\n\nclass " + className + " {\n",
-    name,
-    toString = '  public String toString() {\n    return "' + className + '("',
-    isFirst = true,
-    constructorBody = '',
-    constructorHeader = '  public ' + className + '(';
-  for (name in obj) {
-    var typeName = parseType(obj[name], name, generateJava).javaType;
-    constructorHeader += (isFirst ? '' : ', ') + typeName + " " + name;
-    constructorBody += '    this.' + name + ' = ' + name + ';\n';
-    code = code + "  public " + typeName + " " + name + ";\n";
-    toString = toString + ' + ' + (isFirst ? '"' : '", ') + name + ':" + ' + ((obj[name] instanceof Array) ? 'java.util.Arrays.toString(' + name + '.toArray())' : name)
-    isFirst = false;
+function javaType(entry) {
+  switch (entry.type) {
+    case 'int':
+      return(entry.type);
+    case 'float':
+      return(entry.type);
+    case 'array':
+      return('java.util.List<' + nameToJavaClass(entry.arrayType) + '>');
+    case 'string':
+      return('String');
+    default:
+      return(nameToJavaClass(entry.type));
   }
-  code = code + '\n' + constructorHeader + ') {\n' + constructorBody + '  }\n\n' + toString + '+ ")";\n  }\n\n}';
-  zip.file(packageName.replace(/\./g, '/') + '/' + className + ".java", code);
- // console.log(code);
 }
 
 function generateJava2() {
@@ -100,7 +95,48 @@ function generateJava2() {
     }
     code = code + '\n' + constructorHeader + ') {\n' + constructorBody + '  }\n\n' + toString + '+ ")";\n  }\n\n}';
 //    zip.file(packageName.replace(/\./g, '/') + '/' + className + ".java", code);
-    console.log(code);
+ //      console.log(code);
+  }
+}
+
+function compareTypes(t1, t2) {
+  if (typeof t1 == 'undefined' || typeof t2 == 'undefined') return false;
+  if (t1.members.length != t2.members.length) return(false);
+  for (var i=0; i<t1.members.length; i++) {
+    var m1 = t1.members[i], m2 = t2.members[i];
+    if (m1.name != m2.name || m1.type != m2.type) return(false);
+  }
+  return(true);
+}
+
+// replace one type in the model with another
+
+function replaceType(t1, t2) {
+  console.log('Replacing ' + t1.name + ' with ' + t2.name);
+  for (var x in types) {
+    var t = types[x];
+    for(var i=0; i< t.members.length; i++) {
+      if (t.members[i].type == t1.name) {
+        t.members[i].type = t2.name;
+      }
+    }
+  }
+  delete(types[t1.name]);
+}
+
+function findDuplicateTypes() {
+  for (var x in types) {
+    for (var y in types) {
+      if (x != y) {
+        if (compareTypes(types[x], types[y])) {
+          if (types[x].name.length < types[y].name.length) {
+            replaceType(types[y], types[x]);
+          } else {
+            replaceType(types[x], types[y]);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -127,10 +163,13 @@ function generateApiDocJson(apiName) {
     for (var i = 0; i < t.members.length; i++) {
       code += '        {\n';
       code += '          "name": "' + t.members[i].name + '",\n';
+      if (t.members[i].example) {
+        code += '          "example":"' + t.members[i].example.trim() + '",\n';
+      }
       code += '          "type": "' + apiDocType(t.members[i]) + '"\n';
       code += '        }' + (i< t.members.length-1 ? ',' : '') + '\n';
     }
-    code += '      ]\n    },\n'
+    code += '      ]\n    }' + ((j < typeNames.length-1)?',':'') + '\n'
   }
   code += '  }\n}';
   return(code);
@@ -143,15 +182,29 @@ $('#generate-java').click(function() {
   zip = new JSZip();
   var asJson = JSON.parse($('#input-json').val());
   var rootTypeName = $('#root-class').val();
-  parseObject(asJson, rootTypeName);
+  parseType(asJson, rootTypeName);
+  findDuplicateTypes();
   generateJava2();
 
   $('#apidoc').html(generateApiDocJson(rootTypeName));
-  for (var i=0; i<types.length; i++ ) {
-    console.log(types[i]);
+  for (var k in types) {
+    console.log(types[k]);
   }
   var content = zip.generate({
     type: "blob"
   });
-   // saveAs(content, "example.zip");
+  // saveAs(content, "example.zip");
+});
+
+$('#saveapidoc').click(function() {
+  saveAs( new Blob([$('#apidoc').html()], { type: "application.json"}), "apidoc.json")
+});
+
+$('#fetch-json').click(function() {
+  var url=$('#json-url').val();
+  $.getJSON(url).done(function(data) {
+    $('#input-json').html(JSON.stringify(data.response));
+  }).fail(function(status, err) {
+    alert('Error ' + err + ' loading JSON from ' + url);
+  })
 });
